@@ -31,6 +31,8 @@
 #ifndef CONTEXT_GL_X11_H
 #define CONTEXT_GL_X11_H
 
+#include "temp_gl_defines.h"
+
 #ifdef X11_ENABLED
 
 #if defined(OPENGL_ENABLED)
@@ -39,7 +41,7 @@
 #include <X11/Xlib.h>
 #include <X11/extensions/Xrender.h>
 
-struct ContextGL_X11_Private;
+//struct ContextGL_X11_Private;
 
 class ContextGL_X11 {
 public:
@@ -48,10 +50,10 @@ public:
 	};
 
 private:
-	ContextGL_X11_Private *p;
-	OS::VideoMode default_video_mode;
-	::Display *x11_display;
-	::Window &x11_window;
+//	ContextGL_X11_Private *p;
+    //OS::VideoMode default_video_mode;
+//	::Display *x11_display;
+//	::Window &x11_window;
 	bool double_buffer;
 	bool direct_render;
 	int glx_minor, glx_major;
@@ -70,7 +72,9 @@ public:
 	void set_use_vsync(bool p_use);
 	bool is_using_vsync() const;
 
-	ContextGL_X11(::Display *p_x11_display, ::Window &p_x11_window, const OS::VideoMode &p_default_video_mode, ContextType p_context_type);
+//	ContextGL_X11(::Display *p_x11_display, ::Window &p_x11_window, const OS::VideoMode &p_default_video_mode, ContextType p_context_type);
+//	ContextGL_X11(::Display *p_x11_display, const Vector2i &p_size, ContextType p_context_type);
+	ContextGL_X11(const Vector2i &p_size, ContextType p_context_type);
 	~ContextGL_X11();
 };
 

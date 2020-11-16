@@ -50,15 +50,15 @@ struct ContextGL_X11_Private {
 };
 
 void ContextGL_X11::release_current() {
-	glXMakeCurrent(x11_display, None, nullptr);
+//	glXMakeCurrent(x11_display, None, nullptr);
 }
 
 void ContextGL_X11::make_current() {
-	glXMakeCurrent(x11_display, x11_window, p->glx_context);
+//	glXMakeCurrent(x11_display, x11_window, p->glx_context);
 }
 
 void ContextGL_X11::swap_buffers() {
-	glXSwapBuffers(x11_display, x11_window);
+//	glXSwapBuffers(x11_display, x11_window);
 }
 
 static bool ctxErrorOccurred = false;
@@ -168,7 +168,8 @@ Error ContextGL_X11::initialize() {
 	}
 
 	swa.colormap = XCreateColormap(x11_display, RootWindow(x11_display, vi->screen), vi->visual, AllocNone);
-	x11_window = XCreateWindow(x11_display, RootWindow(x11_display, vi->screen), 0, 0, OS::get_singleton()->get_video_mode().width, OS::get_singleton()->get_video_mode().height, 0, vi->depth, InputOutput, vi->visual, valuemask, &swa);
+//	x11_window = XCreateWindow(x11_display, RootWindow(x11_display, vi->screen), 0, 0, OS::get_singleton()->get_video_mode().width, OS::get_singleton()->get_video_mode().height, 0, vi->depth, InputOutput, vi->visual, valuemask, &swa);
+	x11_window = XCreateWindow(x11_display, RootWindow(x11_display, vi->screen), 0, 0, 320, 240, 0, vi->depth, InputOutput, vi->visual, valuemask, &swa);
 	XStoreName(x11_display, x11_window, "Godot Engine");
 
 	ERR_FAIL_COND_V(!x11_window, ERR_UNCONFIGURED);
@@ -186,20 +187,23 @@ Error ContextGL_X11::initialize() {
 }
 
 int ContextGL_X11::get_window_width() {
-	XWindowAttributes xwa;
-	XGetWindowAttributes(x11_display, x11_window, &xwa);
+//	XWindowAttributes xwa;
+//	XGetWindowAttributes(x11_display, x11_window, &xwa);
 
-	return xwa.width;
+//	return xwa.width;
+	return 0;
 }
 
 int ContextGL_X11::get_window_height() {
-	XWindowAttributes xwa;
-	XGetWindowAttributes(x11_display, x11_window, &xwa);
+//	XWindowAttributes xwa;
+//	XGetWindowAttributes(x11_display, x11_window, &xwa);
 
-	return xwa.height;
+//	return xwa.height;
+	return 0;
 }
 
 void ContextGL_X11::set_use_vsync(bool p_use) {
+	/*
 	static bool setup = false;
 	static PFNGLXSWAPINTERVALEXTPROC glXSwapIntervalEXT = nullptr;
 	static PFNGLXSWAPINTERVALSGIPROC glXSwapIntervalMESA = nullptr;
@@ -226,31 +230,34 @@ void ContextGL_X11::set_use_vsync(bool p_use) {
 	} else
 		return;
 	use_vsync = p_use;
+	*/
 }
 
 bool ContextGL_X11::is_using_vsync() const {
 	return use_vsync;
 }
 
-ContextGL_X11::ContextGL_X11(::Display *p_x11_display, ::Window &p_x11_window, const OS::VideoMode &p_default_video_mode, ContextType p_context_type) :
-		x11_window(p_x11_window) {
-	default_video_mode = p_default_video_mode;
-	x11_display = p_x11_display;
+//ContextGL_X11::ContextGL_X11(::Display *p_x11_display, ::Window &p_x11_window, const OS::VideoMode &p_default_video_mode, ContextType p_context_type) :
+//		x11_window(p_x11_window) {
+//	ContextGL_X11::ContextGL_X11(::Display *p_x11_display, const Vector2i &p_size, ContextType p_context_type)  {
+	ContextGL_X11::ContextGL_X11(const Vector2i &p_size, ContextType p_context_type)  {
+	//default_video_mode = p_default_video_mode;
+	//x11_display = p_x11_display;
 
 	context_type = p_context_type;
 
 	double_buffer = false;
 	direct_render = false;
 	glx_minor = glx_major = 0;
-	p = memnew(ContextGL_X11_Private);
-	p->glx_context = 0;
+	//p = memnew(ContextGL_X11_Private);
+//	p->glx_context = 0;
 	use_vsync = false;
 }
 
 ContextGL_X11::~ContextGL_X11() {
 	release_current();
-	glXDestroyContext(x11_display, p->glx_context);
-	memdelete(p);
+//	glXDestroyContext(x11_display, p->glx_context);
+//	memdelete(p);
 }
 
 #endif
