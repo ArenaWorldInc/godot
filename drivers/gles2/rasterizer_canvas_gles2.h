@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  rasterizer_gles2.h                                                   */
+/*  rasterizer_canvas_gles2.h                                            */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,53 +28,47 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef RASTERIZERGLES2_H
-#define RASTERIZERGLES2_H
+#ifndef RASTERIZERCANVASGLES2_H
+#define RASTERIZERCANVASGLES2_H
 
-#include "rasterizer_canvas_gles2.h"
-#include "rasterizer_scene_gles2.h"
-#include "rasterizer_storage_gles2.h"
-#include "servers/visual/rasterizer.h"
+#include "drivers/gles_common/rasterizer_canvas_batcher.h"
+#include "rasterizer_canvas_base_gles2.h"
 
-class RasterizerGLES2 : public Rasterizer {
+class RasterizerSceneGLES2;
 
-	static Rasterizer *_create_current();
+class RasterizerCanvasGLES2 : public RasterizerCanvasBaseGLES2, public RasterizerCanvasBatcher<RasterizerCanvasGLES2, RasterizerStorageGLES2> {
 
-	RasterizerStorageGLES2 *storage;
-	RasterizerCanvasGLES2 *canvas;
-	RasterizerSceneGLES2 *scene;
-
-	double time_total;
-	float time_scale;
+	friend class RasterizerCanvasBatcher<RasterizerCanvasGLES2, RasterizerStorageGLES2>;
 
 public:
-	virtual RasterizerStorage *get_storage();
-	virtual RasterizerCanvas *get_canvas();
-	virtual RasterizerScene *get_scene();
+	virtual void canvas_render_items_begin(const Color &p_modulate, Light *p_light, const Transform2D &p_base_transform);
+	virtual void canvas_render_items_end();
+	virtual void canvas_render_items(Item *p_item_list, int p_z, const Color &p_modulate, Light *p_light, const Transform2D &p_base_transform);
+	virtual void canvas_begin();
+	virtual void canvas_end();
 
-	virtual void set_boot_image(const Ref<Image> &p_image, const Color &p_color, bool p_scale, bool p_use_filter = true);
-	virtual void set_shader_time_scale(float p_scale);
+private:
+	// legacy codepath .. to remove after testing
+	void _legacy_canvas_render_item(Item *p_ci, RenderItemState &r_ris);
 
-	virtual void initialize();
-	virtual void begin_frame(double frame_step);
-	virtual void set_current_render_target(RID p_render_target);
-	virtual void restore_render_target(bool p_3d_was_drawn);
-	virtual void clear_render_target(const Color &p_color);
-	virtual void blit_render_target_to_screen(RID p_render_target, const Rect2 &p_screen_rect, int p_screen = 0);
-	virtual void output_lens_distorted_to_screen(RID p_render_target, const Rect2 &p_screen_rect, float p_k1, float p_k2, const Vector2 &p_eye_center, float p_oversample);
-	virtual void end_frame(bool p_swap_buffers);
-	virtual void finalize();
+	// high level batch funcs
+	void canvas_render_items_implementation(Item *p_item_list, int p_z, const Color &p_modulate, Light *p_light, const Transform2D &p_base_transform);
+	void render_joined_item(const BItemJoined &p_bij, RenderItemState &r_ris);
+	bool try_join_item(Item *p_ci, RenderItemState &r_ris, bool &r_batch_break);
+	void render_batches(Item::Command *const *p_commands, Item *p_current_clip, bool &r_reclip, RasterizerStorageGLES2::Material *p_material);
 
-	static Error is_viable();
-	static void make_current();
-	static void register_config();
+	// low level batch funcs
+	void _batch_upload_buffers();
+	void _batch_render_generic(const Batch &p_batch, RasterizerStorageGLES2::Material *p_material);
+	void _batch_render_lines(const Batch &p_batch, RasterizerStorageGLES2::Material *p_material, bool p_anti_alias);
 
-	virtual bool is_low_end() const { return true; }
+	// funcs used from rasterizer_canvas_batcher template
+	void gl_enable_scissor(int p_x, int p_y, int p_width, int p_height) const;
+	void gl_disable_scissor() const;
 
-	virtual const char *gl_check_for_error(bool p_print_error = true);
-
-	RasterizerGLES2();
-	~RasterizerGLES2();
+public:
+	void initialize();
+	RasterizerCanvasGLES2();
 };
 
-#endif // RASTERIZERGLES2_H
+#endif // RASTERIZERCANVASGLES2_H

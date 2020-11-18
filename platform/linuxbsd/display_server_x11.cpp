@@ -44,8 +44,8 @@
 #include "servers/rendering/rasterizer_rd/rasterizer_rd.h"
 #endif
 
-#if defined (OPENGL_ENABLED)
-#include "drivers/gles2/rasterizer_gles2.h"
+#if defined(OPENGL_ENABLED)
+#include "drivers/gles2/rasterizer_wrapper_gles2.h"
 #endif
 
 #include <stdio.h>
@@ -739,8 +739,8 @@ void DisplayServerX11::delete_sub_window(WindowID p_id) {
 	}
 #endif
 #ifdef OPENGL_ENABLED
-	if (rendering_driver == "gles3") {
-		//do stuff to destroy a Window in OpenGL
+	if (rendering_driver == "opengl_es") {
+		context_gles2->window_destroy(p_id);
 	}
 #endif
 
@@ -2410,7 +2410,8 @@ void DisplayServerX11::_window_changed(XEvent *event) {
 	}
 #endif
 #if defined(OPENGL_ENABLED)
-	if (rendering_driver == "GLES3") {
+	if (rendering_driver == "opengl_es") {
+		context_gles2->window_resize(window_id, wd.size.width, wd.size.height);
 	}
 #endif
 
@@ -3596,6 +3597,13 @@ DisplayServerX11::WindowID DisplayServerX11::_create_window(WindowMode p_mode, u
 			ERR_FAIL_COND_V_MSG(err != OK, INVALID_WINDOW_ID, "Can't create a Vulkan window");
 		}
 #endif
+#ifdef OPENGL_ENABLED
+		print_line("rendering_driver " + rendering_driver);
+		if (rendering_driver == "opengl_es") {
+			Error err = context_gles2->window_create(id, wd.x11_window, x11_display, p_rect.size.width, p_rect.size.height);
+			ERR_FAIL_COND_V_MSG(err != OK, INVALID_WINDOW_ID, "Can't create a GLES2 window");
+		}
+#endif
 
 		//set_class_hint(x11_display, wd.x11_window);
 		XFlush(x11_display);
@@ -3785,10 +3793,11 @@ DisplayServerX11::DisplayServerX11(const String &p_rendering_driver, WindowMode 
 	rendering_driver = p_rendering_driver;
 
 #ifndef _MSC_VER
-#warning Forcing vulkan rendering driver because OpenGL not implemented yet
+//#warning Forcing vulkan rendering driver because OpenGL not implemented yet
+#warning Forcing opengl rendering driver because selecting properly is too much effort
 #endif
-//	rendering_driver = "vulkan";
-rendering_driver = "opengl_es";
+	//	rendering_driver = "vulkan";
+	rendering_driver = "opengl_es";
 
 #if defined(VULKAN_ENABLED)
 	if (rendering_driver == "vulkan") {
@@ -3845,8 +3854,9 @@ rendering_driver = "opengl_es";
 
 		ContextGL_X11::ContextType opengl_api_type = ContextGL_X11::GLES_2_0_COMPATIBLE;
 
-//		context_gles2 = memnew(ContextGL_X11(x11_display, x11_window, current_videomode, opengl_api_type));
-		context_gles2 = memnew(ContextGL_X11(x11_display, p_resolution, opengl_api_type));
+		//		context_gles2 = memnew(ContextGL_X11(x11_display, x11_window, current_videomode, opengl_api_type));
+		//		context_gles2 = memnew(ContextGL_X11(x11_display, p_resolution, opengl_api_type));
+		context_gles2 = memnew(ContextGL_X11(p_resolution, opengl_api_type));
 
 		if (context_gles2->initialize() != OK) {
 			memdelete(context_gles2);
@@ -3857,16 +3867,16 @@ rendering_driver = "opengl_es";
 			return;
 		}
 
-//		context_gles2->set_use_vsync(current_videomode.use_vsync);
+		//		context_gles2->set_use_vsync(current_videomode.use_vsync);
 
 		if (true) {
-//		if (RasterizerGLES2::is_viable() == OK) {
-	//		RasterizerGLES2::register_config();
-			RasterizerGLES2::make_current();
+			//		if (RasterizerGLES2::is_viable() == OK) {
+			//		RasterizerGLES2::register_config();
+			RasterizerWrapperGLES2::make_current();
 		} else {
 			memdelete(context_gles2);
 			context_gles2 = nullptr;
-//			ERR_FAIL_V(ERR_UNAVAILABLE);
+			//			ERR_FAIL_V(ERR_UNAVAILABLE);
 			r_error = ERR_UNAVAILABLE;
 			return;
 		}
@@ -4084,7 +4094,8 @@ DisplayServerX11::~DisplayServerX11() {
 		}
 #endif
 #ifdef OPENGL_ENABLED
-		if (rendering_driver == "GLES3") {
+		if (rendering_driver == "opengl_es") {
+			context_gles2->window_destroy(E->key());
 		}
 #endif
 
@@ -4108,6 +4119,13 @@ DisplayServerX11::~DisplayServerX11() {
 		if (context_vulkan) {
 			memdelete(context_vulkan);
 		}
+	}
+#endif
+
+#ifdef OPENGL_ENABLED
+	if (context_gles2) {
+		memdelete(context_gles2);
+		context_gles2 = nullptr;
 	}
 #endif
 

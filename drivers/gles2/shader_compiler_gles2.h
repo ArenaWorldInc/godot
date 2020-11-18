@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  rasterizer_gles2.h                                                   */
+/*  shader_compiler_gles2.h                                              */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,53 +28,74 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef RASTERIZERGLES2_H
-#define RASTERIZERGLES2_H
+#ifndef SHADERCOMPILERGLES2_H
+#define SHADERCOMPILERGLES2_H
 
-#include "rasterizer_canvas_gles2.h"
-#include "rasterizer_scene_gles2.h"
-#include "rasterizer_storage_gles2.h"
-#include "servers/visual/rasterizer.h"
+#include "core/pair.h"
+#include "core/string_builder.h"
+#include "servers/visual/shader_language.h"
+#include "servers/visual/shader_types.h"
+#include "servers/visual_server.h"
 
-class RasterizerGLES2 : public Rasterizer {
+class ShaderCompilerGLES2 {
+public:
+	struct IdentifierActions {
 
-	static Rasterizer *_create_current();
+		Map<StringName, Pair<int *, int> > render_mode_values;
+		Map<StringName, bool *> render_mode_flags;
+		Map<StringName, bool *> usage_flag_pointers;
+		Map<StringName, bool *> write_flag_pointers;
 
-	RasterizerStorageGLES2 *storage;
-	RasterizerCanvasGLES2 *canvas;
-	RasterizerSceneGLES2 *scene;
+		Map<StringName, ShaderLanguage::ShaderNode::Uniform> *uniforms;
+	};
 
-	double time_total;
-	float time_scale;
+	struct GeneratedCode {
+
+		Vector<CharString> custom_defines;
+		Vector<StringName> uniforms;
+		Vector<StringName> texture_uniforms;
+		Vector<ShaderLanguage::ShaderNode::Uniform::Hint> texture_hints;
+
+		String vertex_global;
+		String vertex;
+		String fragment_global;
+		String fragment;
+		String light;
+
+		bool uses_fragment_time;
+		bool uses_vertex_time;
+	};
+
+private:
+	ShaderLanguage parser;
+
+	struct DefaultIdentifierActions {
+
+		Map<StringName, String> renames;
+		Map<StringName, String> render_mode_defines;
+		Map<StringName, String> usage_defines;
+	};
+
+	void _dump_function_deps(ShaderLanguage::ShaderNode *p_node, const StringName &p_for_func, const Map<StringName, String> &p_func_code, StringBuilder &r_to_add, Set<StringName> &r_added);
+	String _dump_node_code(ShaderLanguage::Node *p_node, int p_level, GeneratedCode &r_gen_code, IdentifierActions &p_actions, const DefaultIdentifierActions &p_default_actions, bool p_assigning, bool p_use_scope = true);
+
+	StringName current_func_name;
+	StringName vertex_name;
+	StringName fragment_name;
+	StringName light_name;
+	StringName time_name;
+
+	Set<StringName> used_name_defines;
+	Set<StringName> used_flag_pointers;
+	Set<StringName> used_rmode_defines;
+	Set<StringName> internal_functions;
+
+	DefaultIdentifierActions actions[VS::SHADER_MAX];
 
 public:
-	virtual RasterizerStorage *get_storage();
-	virtual RasterizerCanvas *get_canvas();
-	virtual RasterizerScene *get_scene();
+	Error compile(VS::ShaderMode p_mode, const String &p_code, IdentifierActions *p_actions, const String &p_path, GeneratedCode &r_gen_code);
 
-	virtual void set_boot_image(const Ref<Image> &p_image, const Color &p_color, bool p_scale, bool p_use_filter = true);
-	virtual void set_shader_time_scale(float p_scale);
-
-	virtual void initialize();
-	virtual void begin_frame(double frame_step);
-	virtual void set_current_render_target(RID p_render_target);
-	virtual void restore_render_target(bool p_3d_was_drawn);
-	virtual void clear_render_target(const Color &p_color);
-	virtual void blit_render_target_to_screen(RID p_render_target, const Rect2 &p_screen_rect, int p_screen = 0);
-	virtual void output_lens_distorted_to_screen(RID p_render_target, const Rect2 &p_screen_rect, float p_k1, float p_k2, const Vector2 &p_eye_center, float p_oversample);
-	virtual void end_frame(bool p_swap_buffers);
-	virtual void finalize();
-
-	static Error is_viable();
-	static void make_current();
-	static void register_config();
-
-	virtual bool is_low_end() const { return true; }
-
-	virtual const char *gl_check_for_error(bool p_print_error = true);
-
-	RasterizerGLES2();
-	~RasterizerGLES2();
+	ShaderCompilerGLES2();
 };
 
-#endif // RASTERIZERGLES2_H
+#endif // SHADERCOMPILERGLES3_H
